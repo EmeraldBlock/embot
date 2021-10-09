@@ -82,16 +82,18 @@ async function runBot() {
                 await message.channel.send(err.getEmbed());
             } else if (err instanceof Error) {
                 console.error(err);
-                const embed = new Discord.MessageEmbed()
-                    .setColor(config.colors.error)
-                    .setTitle(err.name)
-                    .setDescription(err.message);
+                const embed = new Discord.MessageEmbed({
+                    title: err.name,
+                    description: err.message,
+                    color: config.colors.error,
+                });
                 await message.channel.send(embed);
             } else {
                 console.error(`Nonstandard Error: ${err}`);
-                const embed = new Discord.MessageEmbed()
-                    .setColor(config.colors.error)
-                    .setTitle("An error occurred");
+                const embed = new Discord.MessageEmbed({
+                    title: "An error occurred",
+                    color: config.colors.error,
+                });
                 await message.channel.send(embed);
             }
         }

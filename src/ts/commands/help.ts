@@ -13,8 +13,9 @@ export default <Command>{
     usage:
 `[<command>]`,
     execute: async (message, args, data) => {
-        const embed = new Discord.MessageEmbed()
-            .setColor(config.colors.info);
+        const embed = new Discord.MessageEmbed({
+            color: config.colors.info,
+        });
         if (args.length === 0) {
             embed
                 .setTitle("Commands")
