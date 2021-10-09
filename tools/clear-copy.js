@@ -6,6 +6,7 @@ fs.rmSync("./dist/", { recursive: true, force: true });
 fs.mkdirSync("./dist/");
 try {
     fs.cpSync("./src/assets/", "./dist/assets/", { recursive: true });
-} catch {
+} catch (error) {
+    if (error.code !== "ENOENT") throw error;
     console.log(`No ${chalk.yellow("assets")} folder found.`);
 }
