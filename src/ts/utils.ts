@@ -1,4 +1,9 @@
+import fs from "fs/promises";
+
 import Discord from "discord.js";
+import chalk from "chalk";
+
+import { Listener } from "./index.js";
 
 // general
 
@@ -47,6 +52,26 @@ export async function sleep(ms: number): Promise<void> {
     return await new Promise(resolve => setTimeout(resolve, ms));
 }
 
+export function catchAsync<T extends unknown[]>(func: (...args: T) => void | Promise<void>): (...args: T) => Promise<void> {
+    return async (...args: T) => {
+        try {
+            await func(...args);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+}
+
+export async function readdirSafe(path: string): Promise<string[]> {
+    try {
+        return await fs.readdir(path);
+    } catch (error) {
+        if (!(error instanceof Error) || (<Error & { code?: string }>error).code !== "ENOENT") throw error;
+        console.log(`No ${chalk.yellow(path)} folder found.`);
+        return [];
+    }
+}
+
 // Discord
 
 export async function findAsync<T>(collection: Discord.Collection<unknown, T>, callback: (val: T) => Promise<boolean>): Promise<T | undefined> {
@@ -67,4 +92,14 @@ export async function safeDelete(message: Discord.Message): Promise<Discord.Mess
 export function fetchGuildMessageById(id: Discord.Snowflake, guild: Discord.Guild): Promise<Discord.Message> {
     const textChannelsCache = guild.channels.cache.filter((channel): channel is Discord.TextChannel => channel instanceof Discord.TextChannel);
     return Promise.any(textChannelsCache.map(channel => channel.messages.fetch(id)));
+}
+
+export function makeListener<K extends keyof Discord.ClientEvents>(listenerArgs: Omit<Listener, "enable" | "disable">, event: K, listener: (...args: Discord.ClientEvents[K]) => void): Listener;
+export function makeListener<S extends string | symbol>(listenerArgs: Omit<Listener, "enable" | "disable">, event: Exclude<S, keyof Discord.ClientEvents>, listener: (...args: unknown[]) => void): Listener;
+export function makeListener(listenerArgs: Omit<Listener, "enable" | "disable">, event: string | symbol, listener: (...args: unknown[]) => void): Listener {
+    return {
+        ...listenerArgs,
+        enable: client => void client.on(event, catchAsync(listener)),
+        disable: client => void client.off(event, catchAsync(listener)),
+    };
 }

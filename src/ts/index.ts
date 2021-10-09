@@ -7,6 +7,7 @@ import Discord from "discord.js";
 import chalk from "chalk";
 
 import { BotError, AggregateBotError } from "./errors.js";
+import { readdirSafe } from "./utils.js";
 
 import config from "./config/config.json";
 import secrets from "./config/secrets.json";
@@ -25,29 +26,46 @@ export interface Command {
     execute: (message: Discord.Message, args: Array<string>, data: Data) => void | Promise<void>;
 }
 
+export interface Listener {
+    name: string;
+    enable: (client: Discord.Client) => void | Promise<void>;
+    disable: (client: Discord.Client) => void | Promise<void>;
+}
+
 type Data = {
-    commands: Discord.Collection<string, Command>
+    commands: Discord.Collection<string, Command>,
+    listeners: Discord.Collection<string, Listener>,
 };
 
 const client = new Discord.Client({
     partials: ["MESSAGE", "CHANNEL", "REACTION", "USER"],
 });
 
-async function initData(): Promise<Data> {
-    const files = (await fs.readdir("./commands/")).filter(file => file.endsWith(".js"));
+async function initDir<T extends { name: string }>(dir: string): Promise<Discord.Collection<string, T>> {
+    const files = (await readdirSafe(dir)).filter(file => file.endsWith(".js"));
 
-    const commands: Discord.Collection<string, Command> = new Discord.Collection();
+    const collection: Discord.Collection<string, T> = new Discord.Collection();
     for (const file of files) {
-        const val = await import(`./commands/${file}`) as { default: Command };
-        const command = val.default;
-        commands.set(command.name, command);
+        const val = await import(`${dir}${file}`) as { default: T };
+        const item = val.default;
+        collection.set(item.name, item);
     }
 
-    return { commands };
+    return collection;
+}
+
+async function initData(): Promise<Data> {
+    return {
+        commands: await initDir("./commands/"),
+        listeners: await initDir("./listeners/"),
+    };
 }
 
 async function runBot() {
     const data = await initData();
+    for (const listener of data.listeners.array()) {
+        await listener.enable(client);
+    }
 
     client.once("ready", async () => {
         assert(client.user !== null);
