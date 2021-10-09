@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs from "fs/promises";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import assert from "assert/strict";
@@ -34,7 +34,7 @@ const client = new Discord.Client({
 });
 
 async function initData(): Promise<Data> {
-    const files = fs.readdirSync("./commands/").filter(file => file.endsWith(".js"));
+    const files = (await fs.readdir("./commands/")).filter(file => file.endsWith(".js"));
 
     const commands: Discord.Collection<string, Command> = new Discord.Collection();
     for (const file of files) {
