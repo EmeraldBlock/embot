@@ -2,7 +2,7 @@ import { Command } from "../index.js";
 
 import secrets from "../config/secrets.json";
 
-export default new Command({
+export default <Command>{
     name: "eval",
     alias: ["evil"],
     desc:
@@ -13,4 +13,4 @@ export default new Command({
     execute: async (message, args) => {
         await message.channel.send(await eval(args.join(" ")), { code: true });
     },
-});
+};

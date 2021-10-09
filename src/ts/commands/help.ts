@@ -5,7 +5,7 @@ import { BotError } from "../errors.js";
 
 import config from "../config/config.json";
 
-export default new Command({
+export default <Command>{
     name: "help",
     alias: ["info"],
     desc:
@@ -39,4 +39,4 @@ ${config.prefix}${command.name} ${command.usage}
         }
         await message.channel.send(embed);
     },
-});
+};

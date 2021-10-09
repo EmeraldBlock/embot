@@ -16,7 +16,7 @@ const __dirname = dirname(__filename);
 
 process.chdir(__dirname);
 
-interface CommandArgs {
+export interface Command {
     name: string;
     alias?: Array<string>;
     desc?: string;
@@ -24,12 +24,6 @@ interface CommandArgs {
     auth?: (message: Discord.Message) => boolean;
     execute: (message: Discord.Message, args: Array<string>, data: Data) => void | Promise<void>;
 }
-export class Command {
-    constructor(args: CommandArgs) {
-        Object.assign(this, args);
-    }
-}
-export interface Command extends CommandArgs {}
 
 type Data = {
     commands: Discord.Collection<string, Command>
@@ -44,8 +38,7 @@ async function initData(): Promise<Data> {
 
     const commands: Discord.Collection<string, Command> = new Discord.Collection();
     for (const file of files) {
-        const val: Record<string, unknown> = await import(`./commands/${file}`) as Record<string, unknown>;
-        if (!(val.default instanceof Command)) continue;
+        const val = await import(`./commands/${file}`) as { default: Command };
         const command = val.default;
         commands.set(command.name, command);
     }
